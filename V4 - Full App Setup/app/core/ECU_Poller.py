@@ -4,8 +4,8 @@ import time
 import serial
 from datetime import datetime
 
-ecu_port = "COM7"
-ecu_baud = 115200
+ecu_port = "COM4"
+ecu_baud = 9600
 ecu_serial = None
 ecu_connected = False
 
@@ -14,6 +14,16 @@ ecu_command_read_buffer_times = []
 ecu_command_sent_list = []
 ecu_command_sent_list_times = []
 ecu_char_read_buffer = ""
+
+POLL_RS485_COMMAND = "{00,5}"
+# Number of times to retry each valve/pyro command to survive LoRa half-duplex collisions.
+COMMAND_RETRIES = 10
+COMMAND_RETRY_INTERVAL_S = 0.05
+# How long to block non-poll commands after a poll is sent.
+# Should be >= ECU RS485 scan time (~360ms for 24 valves) + LoRa round-trip margin.
+POLL_COOLDOWN_S = 0.6
+last_poll_sent_time = 0.0
+send_lock = threading.Lock()
 
 # 0 => closed, 1 => open
 ecu_valve_desired_states = [0] * 36
@@ -90,7 +100,11 @@ def close_valve(index: int):
     global ecu_valve_actual_states
     global ecu_valve_desired_states
 
-    send_command("{" + str(index) + ",2}")
+    def _send():
+        for _ in range(COMMAND_RETRIES):
+            send_command("{" + str(index) + ",2}")
+            time.sleep(COMMAND_RETRY_INTERVAL_S)
+    threading.Thread(target=_send, daemon=True).start()
 
 
 def open_valve(index: int):
@@ -98,12 +112,21 @@ def open_valve(index: int):
     global ecu_valve_actual_states
     global ecu_valve_desired_states
 
-    send_command("{" + str(index) + ",1}")
+    def _send():
+        for _ in range(COMMAND_RETRIES):
+            send_command("{" + str(index) + ",1}")
+            time.sleep(COMMAND_RETRY_INTERVAL_S)
+    threading.Thread(target=_send, daemon=True).start()
 
 
 def fire_pyro(index: int):
     ecu_pyro_states[index] = 0 if ecu_pyro_states[index] == 1 else 1
-    send_command("{" + str(index) + ",3}")
+
+    def _send():
+        for _ in range(COMMAND_RETRIES):
+            send_command("{" + str(index) + ",3}")
+            time.sleep(COMMAND_RETRY_INTERVAL_S)
+    threading.Thread(target=_send, daemon=True).start()
 
     def reset_pyro(index: int):
         ecu_pyro_states[index] = 0
@@ -112,7 +135,9 @@ def fire_pyro(index: int):
 
 
 def poll_rs485():
-    send_command("{00,5}")
+    global last_poll_sent_time
+    last_poll_sent_time = time.time()
+    send_command(POLL_RS485_COMMAND)
 
 
 def set_poll_rs485(enabled: bool):
@@ -179,9 +204,11 @@ def start_ecu_communication():
                     ecu_connected = False
                     time.sleep(0.1)
 
-                # Try polling the rs485 valves if that isn't disabled
+                # Try polling the rs485 valves if that isn't disabled.
+                # Don't start a new poll until the previous cooldown has passed.
                 try:
-                    if rs485_poll_enabled and (time.time() - last_rs485_poll) > 0.5:
+                    poll_cooldown_elapsed = (time.time() - last_poll_sent_time) > POLL_COOLDOWN_S
+                    if rs485_poll_enabled and poll_cooldown_elapsed and (time.time() - last_rs485_poll) > 2.0:
                         last_rs485_poll = time.time()
                         poll_rs485()
 
@@ -241,8 +268,16 @@ def send_command(command: str):
 
     if ecu_connected:
         try:
+            # If a poll was recently sent, sleep out the remaining cooldown
+            # before sending non-poll commands (open/close/pyro/etc.).
+            if command != POLL_RS485_COMMAND:
+                remaining = POLL_COOLDOWN_S - (time.time() - last_poll_sent_time)
+                if remaining > 0:
+                    time.sleep(remaining)
+
             out_string = command + "\r\n"
-            ecu_serial.write(out_string.encode())
+            with send_lock:
+                ecu_serial.write(out_string.encode())
 
             now = datetime.now()
             command_recieved_time = now.strftime("%H:%M:") + f"{now.second}.{now.microsecond // 10000:02d}"
