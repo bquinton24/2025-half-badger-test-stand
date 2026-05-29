@@ -134,7 +134,7 @@ def build():
                 dpg.add_table_column(label="Percent", init_width_or_weight=0.3)
 
                 for i in range(0, 36):
-                    with dpg.table_row():
+                    with dpg.table_row(tag=f"main_valve_row_{i}"):
                         dpg.add_text(str(i))
                         dpg.add_text("Valve " + str(i), tag="valve_loc_" + str(i))
                         dpg.add_button(label="Open", tag=f"valve_open_button_{i}", callback=callback_open_valve, user_data=i)

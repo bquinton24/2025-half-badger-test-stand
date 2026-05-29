@@ -11,18 +11,18 @@ COM4,115200
 9,Not Connected,Not Connected
 10,Not Connected,Not Connected
 11,Not Connected,Not Connected
-12,Custom,GSE Vent
-13,Custom,GSE Fill
+12,GSE Vent,GSE Vent
+13,GSE Fill,GSE Fill
 14,IPA Main,IPA Main
-15,Custom,Custom
-16,Custom,Custom
+15,GN2 Fill,GN2 Main
+16,GN2 Main,GN2 Fill
 17,IPA Tank Vent,IPA Tank Vent
 18,Not Connected,Not Connected
 19,LOX Tank Vent,LOX Tank Vent
 20,LOX Fill,LOX Fill
 21,LOX Main,LOX Main
 22,Not Connected,Not Connected
-23,Not Connected,Not Connected
+23,GSE QD,Not Connected
 24,Not Connected,Not Connected
 25,Not Connected,Not Connected
 26,Not Connected,Not Connected

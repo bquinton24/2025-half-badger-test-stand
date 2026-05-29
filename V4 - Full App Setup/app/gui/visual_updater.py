@@ -295,12 +295,6 @@ def update_thread():
                                     found = True
                                     break
 
-                for tag in pnid_data_tags:
-                    if tag in used_pnid_data_tags:
-                        dpg.show_item(tag)
-                    else:
-                        dpg.hide_item(tag)
-
                 # Deleting any disabled channels from the plots
                 for i in range(24):
                     if not ((i + 1) in active_channels) and dpg.does_item_exist(f"U6p_CH{i+1}_main_plot"):
@@ -328,6 +322,29 @@ def update_thread():
                     dpg.set_value(series_tag, ecu_pt_data)
                     dpg.configure_item(series_tag, label=ecu_pt_locations[i])
 
+                    # Setting ECU PT values on the PNID using sensor location matches.
+                    if len(ecu_pt_data[1]) > 0:
+                        found = False
+                        for tag in pnid_data_tags:
+                            trimmed = tag[5:]
+                            if trimmed.startswith(ecu_pt_locations[i].lower()) and not tag in used_pnid_data_tags:
+                                used_pnid_data_tags.append(tag)
+                                dpg.set_value(tag, str(sigfig_round(ecu_pt_data[1][0], 3)) + "psi")
+                                found = True
+                                break
+
+                        if not found:
+                            for tag in pnid_data_tags:
+                                trimmed = tag[5:]
+                                if trimmed.startswith("custom") and not tag in used_pnid_data_tags:
+                                    used_pnid_data_tags.append(tag)
+                                    dpg.set_value(
+                                        tag,
+                                        ecu_pt_locations[i] + ": " + str(sigfig_round(ecu_pt_data[1][0], 3)) + "psi",
+                                    )
+                                    found = True
+                                    break
+
                 for channel in range(1, 5):
                     series_tag = f"ECU_PT{channel}_main_plot"
                     if channel not in ecu_pt_active_channels and dpg.does_item_exist(series_tag):
@@ -354,10 +371,40 @@ def update_thread():
                     dpg.set_value(series_tag, ecu_tc_data)
                     dpg.configure_item(series_tag, label=ecu_tc_locations[i])
 
+                    # Setting ECU TC values on the PNID using sensor location matches.
+                    if len(ecu_tc_data[1]) > 0:
+                        found = False
+                        for tag in pnid_data_tags:
+                            trimmed = tag[5:]
+                            if trimmed.startswith(ecu_tc_locations[i].lower()) and not tag in used_pnid_data_tags:
+                                used_pnid_data_tags.append(tag)
+                                dpg.set_value(tag, str(sigfig_round(ecu_tc_data[1][0], 3)) + "c")
+                                found = True
+                                break
+
+                        if not found:
+                            for tag in pnid_data_tags:
+                                trimmed = tag[5:]
+                                if trimmed.startswith("custom") and not tag in used_pnid_data_tags:
+                                    used_pnid_data_tags.append(tag)
+                                    dpg.set_value(
+                                        tag,
+                                        ecu_tc_locations[i] + ": " + str(sigfig_round(ecu_tc_data[1][0], 3)) + "c",
+                                    )
+                                    found = True
+                                    break
+
                 for channel in range(1, 5):
                     series_tag = f"ECU_TC{channel}_hot_main_plot"
                     if channel not in ecu_tc_active_channels and dpg.does_item_exist(series_tag):
                         dpg.delete_item(series_tag)
+
+                # Final PNID visibility pass after all DAQ and ECU channels are assigned.
+                for tag in pnid_data_tags:
+                    if tag in used_pnid_data_tags:
+                        dpg.show_item(tag)
+                    else:
+                        dpg.hide_item(tag)
 
             # Updating the ECU data every 0.05 seconds
             if cur_time - last_main_ecu_update > 0.05:
@@ -374,6 +421,14 @@ def update_thread():
 
                 for i in range(0, 36):
                     dpg.set_value(f"valve_loc_{i}", valve_locations[i])
+
+                    row_tag = f"main_valve_row_{i}"
+                    is_not_connected = valve_locations[i] in (f"Valve_{i}", "Not Connected", "")
+                    if dpg.does_item_exist(row_tag):
+                        dpg.configure_item(row_tag, show=not is_not_connected)
+
+                    if is_not_connected:
+                        continue
 
                     percent_tag = f"rs485_valve_{i}"
                     if dpg.does_item_exist(percent_tag):

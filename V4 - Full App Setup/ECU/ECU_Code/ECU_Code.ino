@@ -134,25 +134,23 @@ int ecuUploadedSequenceCount = 0;
 bool ecuSequenceUploadInProgress = false;
 
 // ECU hardcoded launch sequence.
-// NEED TO VERIFIED BEFORE WE LAUNCH.
+// NEED TO VERIFY BEFORE WE LAUNCH.
 const EcuSequenceStep ecuHardcodedLaunchSequence[] = {
   { ECU_SEQUENCE_ACTION_WAIT, 0, 2000 }, // WAIT 2s
   { ECU_SEQUENCE_ACTION_FIRE, 0, 0 }, // fire pyro channel 0 
   { ECU_SEQUENCE_ACTION_WAIT, 0, 1000 }, // WAIT 1s
-  { ECU_SEQUENCE_ACTION_OPEN, 21, 0 }, // open LOX Main
-  { ECU_SEQUENCE_ACTION_WAIT, 0, 150}, // WAIT 0.150s
   { ECU_SEQUENCE_ACTION_OPEN, 14, 0 }, // open IPA Main
+  { ECU_SEQUENCE_ACTION_WAIT, 0, 250}, // WAIT 0.250s
+  { ECU_SEQUENCE_ACTION_OPEN, 21, 0 }, // open LOX Main
   { ECU_SEQUENCE_ACTION_WAIT, 0, 7000 }, // 7s HOT FIRE
-  { ECU_SEQUENCE_ACTION_CLOSE, 21, 0 }, // close LOX Main
-  { ECU_SEQUENCE_ACTION_WAIT, 0, 1000 }, // WAIT 1s
-  { ECU_SEQUENCE_ACTION_CLOSE, 14, 0 }, // close IPA Main
 
-  {ECU_SEQUENCE_ACTION_WAIT, 0, 8000 }, // WAIT 8s
-  {ECU_SEQUENCE_ACTION_OPEN, 20, 0 }, // open LOX Dump
-
-  { ECU_SEQUENCE_ACTION_WAIT, 0, 5000 }, // WAIT 5s
+  { ECU_SEQUENCE_ACTION_WAIT, 0, 9000 }, // WAIT 9s
   { ECU_SEQUENCE_ACTION_OPEN, 17, 0 }, // OPEN IPA VENT
   { ECU_SEQUENCE_ACTION_OPEN, 19, 0 }, // OPEN LOX VENT
+  { ECU_SEQUENCE_ACTION_WAIT, 0, 5000 }, // WAIT 5s
+  { ECU_SEQUENCE_ACTION_OPEN, 20, 0 }, // open LOX Dump
+  { ECU_SEQUENCE_ACTION_WAIT, 0, 2000 }, // WAIT 2s
+  { ECU_SEQUENCE_ACTION_CLOSE, 15, 0 }, // open GN2 Fill
 };
 const int ecuHardcodedLaunchSequenceCount = sizeof(ecuHardcodedLaunchSequence) / sizeof(ecuHardcodedLaunchSequence[0]);
 

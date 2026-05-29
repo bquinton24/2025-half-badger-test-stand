@@ -139,6 +139,10 @@ def build_nov_9_hotfire_setup():
         "LOX Fill",
         "LOX Fill Vent",
         "LOX Tank Vent",
+        "GSE Vent",
+        "GSE Fill",
+        "GSE QD",
+        "GN2 Fill",
         "Not Connected"
     ]
     sensor_locs = [
@@ -150,6 +154,7 @@ def build_nov_9_hotfire_setup():
         "IPA Tank Bottom",
         "IPA Tank Top",
         "Combustion Chamber",
+        "COPV",
         "Custom",
         "Not Connected"
     ]
